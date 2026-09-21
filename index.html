@@ -305,22 +305,22 @@
 
     let currentStep = 0;
     const steps = [
-      { type: 'info', text: "BENVENUTO. IL DESKTOP HA 3 GRUPPI: CARTELLE (SX), FILE (CENTRO), COLLEGAMENTI (DX)." },
+      { type: 'info', text: "BENVENUTO. IL DESKTOP HA 3 GRUPPI DI ICONE: CARTELLE (SX), FILE (CENTRO), COLLEGAMENTI (DX)." },
       { type: 'action', text: "SELEZIONA SOLO LA 'CART. 11' (PRIMA IN ALTO A SINISTRA).", target: ["cartella_1_1"], reqAction: ["CLICK"], errorHint: "CLICCA SULL'ICONA" },
       { type: 'action', text: "DESELEZIONA LA CARTELLA CLICCANDO NEL VUOTO.", target: [], reqAction: ["EMPTY_CLICK"], errorHint: "CLICCA SU UNO SPAZIO VUOTO" },
-      { type: 'info', text: "DRAG & DROP: TRASCINA IL MOUSE NEL VUOTO PER CREARE UN RETTANGOLO DI SELEZIONE." },
+      { type: 'info', text: "DRAG & DROP (RETTANGOLO DI SELEZIONE): TRASCINA IL MOUSE NEL VUOTO PER CREARE UN RETTANGOLO DI SELEZIONE." },
       { type: 'action', text: "SELEZIONA TUTTI E 4 I FILE DELLA PRIMA RIGA (DA DOC1 A RELAZ.1) CON IL RETTANGOLO DI SELEZIONE.", target: ["file_1_1", "file_1_2", "file_1_3", "file_1_4"], reqAction: ["DRAG"], errorHint: "USA IL RETTANGOLO DI SELEZIONE" },
       { type: 'action', text: "DESELEZIONA TUTTO CLICCANDO NEL VUOTO.", target: [], reqAction: ["EMPTY_CLICK"], errorHint: "CLICCA SU UNO SPAZIO VUOTO" },
-      { type: 'info', text: "AGGIUNTA ALLA SELEZIONE: SELEZIONA UN OGGETTO, POI TIENI PREMUTO 'CTRL' E CLICCA GLI ALTRI." },
-      { type: 'action', text: "SELEZIONA 'CART. 21', POI CON CTRL AGGIUNGI 'FOGLIO2' E 'LINK 23'.", target: ["cartella_2_1", "file_2_2", "coll_2_3"], reqAction: ["CTRL_CLICK"], errorHint: "USA CTRL + CLIC" },
+      { type: 'info', text: "AGGIUNTA ALLA SELEZIONE: SELEZIONA UN OGGETTO, POI TIENI PREMUTO 'CTRL' E CLICCA ALTRI OGGETTI, VICINI O LONTANI DAL PRECEDENTE." },
+      { type: 'action', text: "SELEZIONA 'CART. 21', POI CON CTRL PREMUTO AGGIUNGI 'FOGLIO2' E 'LINK 23'.", target: ["cartella_2_1", "file_2_2", "coll_2_3"], reqAction: ["CTRL_CLICK"], errorHint: "USA CTRL + CLIC" },
       { type: 'action', text: "AGGIUNGI ALLA SELEZIONE ATTUALE 'CART. 11' E 'CART. 12' USANDO CTRL + RETTANGOLO DI SELEZIONE.", target: ["cartella_2_1", "file_2_2", "coll_2_3", "cartella_1_1", "cartella_1_2"], reqAction: ["CTRL_DRAG"], errorHint: "USA CTRL + RETTANGOLO" },
       { type: 'info', text: "DESELEZIONE MIRATA: TIENI PREMUTO CTRL E CLICCA UN'ICONA GIA' SELEZIONATA PER DESELEZIONARLA." },
       { type: 'action', text: "DESELEZIONA SOLO 'FOGLIO2' TRAMITE CTRL + CLIC.", target: ["cartella_2_1", "coll_2_3", "cartella_1_1", "cartella_1_2"], reqAction: ["CTRL_CLICK"], errorHint: "USA CTRL + CLIC" },
       { type: 'action', text: "DESELEZIONA 'CART. 11' E 'CART. 12' USANDO CTRL + RETTANGOLO DI SELEZIONE.", target: ["cartella_2_1", "coll_2_3"], reqAction: ["CTRL_DRAG"], errorHint: "USA CTRL + RETTANGOLO" },
       { type: 'action', text: "DESELEZIONA TUTTO CLICCANDO NEL VUOTO.", target: [], reqAction: ["EMPTY_CLICK"], errorHint: "CLICCA SU UNO SPAZIO VUOTO" },
-      { type: 'info', text: "SELEZIONE CONTIGUA: SELEZIONA UNA ICONA, TIENI PREMUTO 'MAIUSC' (SHIFT) E CLICCA UN'ALTRA PER SELEZIONARE L'INTERO INTERVALLO." },
+      { type: 'info', text: "SELEZIONE DI GRUPPI DI OGGETTI VICINI TRA LORO: SELEZIONA UNA ICONA, TIENI PREMUTO 'MAIUSC' (SHIFT) E CLICCA UN'ALTRA PER SELEZIONARE L'INTERO INTERVALLO." },
       { type: 'action', text: "SELEZIONA DA 'CART. 31' A 'CART. 34' USANDO LA COMBINAZIONE MAIUSC + CLIC.", target: ["cartella_3_1", "cartella_3_2", "cartella_3_3", "cartella_3_4"], reqAction: ["SHIFT_CLICK"], errorHint: "USA MAIUSC + CLIC" },
-      { type: 'info', text: "AGGIUNTA DI GRUPPI (CTRL + MAIUSC + CLIC): MANTIENE LA SELEZIONE ATTUALE E AGGIUNGE UN NUOVO INTERVALLO." },
+      { type: 'info', text: "AGGIUNTA DI GRUPPI DI OGGETTI VICINI TRA LORO (CTRL + MAIUSC + CLIC): MANTIENE LA SELEZIONE ATTUALE E AGGIUNGE UN NUOVO INTERVALLO." },
       { type: 'action', text: "MANTENENDO SELEZIONATE LE CARTELLE, TIENI PREMUTO CTRL E CLICCA 'LINK 31'. POI, TIENI PREMUTI CTRL+MAIUSC E CLICCA 'LINK 34'.", target: ["cartella_3_1", "cartella_3_2", "cartella_3_3", "cartella_3_4", "coll_3_1", "coll_3_2", "coll_3_3", "coll_3_4"], reqAction: ["CTRL_CLICK", "CTRL_SHIFT_CLICK"], errorHint: "USA CTRL + CLIC E POI CTRL + MAIUSC + CLIC" },
       { type: 'action', text: "OTTIMO! DESELEZIONA TUTTO PER CONCLUDERE LA LEZIONE.", target: [], reqAction: ["EMPTY_CLICK"], errorHint: "CLICCA SU UNO SPAZIO VUOTO" }
     ];
