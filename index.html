@@ -31,7 +31,7 @@
     }
     .login-box {
       background: white; padding: 30px; border-radius: 8px; text-align: center;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 400px; max-width: 90vw;
     }
     .login-box h2 { margin-bottom: 20px; font-size: 18px; color: #005a9e; }
     .login-box input {
@@ -45,7 +45,7 @@
     .login-box button:hover { background: #005a9e; }
 
     #guide-panel {
-      position: absolute; top: 20px; left: 20px; width: 380px;
+      position: absolute; top: 20px; left: 20px; width: 380px; max-width: 90vw;
       background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
       border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000;
       display: none; flex-direction: column; border: 1px solid #ccc;
@@ -66,7 +66,17 @@
     .btn-test:hover { background: #1b5e20; }
 
     #desktop { flex: 1; position: relative; padding: 20px; }
-    .icon-container { display: grid; grid-template-columns: repeat(4, 90px) 40px repeat(4, 90px) 40px repeat(4, 90px); grid-auto-rows: 105px; gap: 10px; }
+    
+    /* SCALATURA AUTOMATICA: Il calc calcola lo spazio disponibile e restringe la griglia se necessario */
+    .icon-container { 
+      display: grid; 
+      grid-template-columns: repeat(4, 90px) 40px repeat(4, 90px) 40px repeat(4, 90px); 
+      grid-auto-rows: 105px; 
+      gap: 10px; 
+      transform: scale(min(1, calc((100vw - 40px) / 1270)));
+      transform-origin: top left;
+    }
+    
     .spacer { width: 40px; }
     .icon {
       width: 85px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -124,14 +134,13 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/a/macros/ialombardia.it/s/AKfycbwt83klumVyHu3DavZPnF51qDlYblIyqhvAp3XHv5tL6els1i_nPQKDV5XFCMn7k8pW/exec";
+    const GOOGLE_SCRIPT_URL = "INSERISCI_QUI_URL_DELLO_SCRIPT";
 
     let studentEmail = "";
     let score = 0;
     let totalPossibleScore = 0;
     let firstAttempt = true;
 
-    // Tracker per vincolare la procedura
     let currentActions = new Set();
     let isDragging = false;
     let dragStarted = false;
@@ -202,7 +211,6 @@
       icon.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         
-        // Traccia l'azione dell'utente
         if (e.shiftKey && e.ctrlKey) currentActions.add('CTRL_SHIFT_CLICK');
         else if (e.shiftKey) currentActions.add('SHIFT_CLICK');
         else if (e.ctrlKey) currentActions.add('CTRL_CLICK');
@@ -243,7 +251,6 @@
       if (!isDragging) return;
       const cX = e.clientX, cY = e.clientY;
       
-      // Verifica se l'utente sta effettivamente trascinando e non solo cliccando
       if (Math.abs(cX - startX) > 5 || Math.abs(cY - startY) > 5) {
         dragStarted = true;
         currentDragType = e.ctrlKey ? 'CTRL_DRAG' : 'DRAG';
@@ -328,7 +335,7 @@
       document.getElementById('next-btn').textContent = step.type === 'action' ? "VERIFICA AZIONE" : "AVANTI";
       document.getElementById('feedback-msg').textContent = "";
       firstAttempt = true;
-      currentActions.clear(); // Reset delle azioni ad ogni nuovo step
+      currentActions.clear(); 
     }
 
     function verifyOrNext() {
@@ -339,7 +346,6 @@
         
         let isCorrectAction = true;
         if (step.reqAction) {
-          // Verifica che tutte le azioni richieste per questo step siano state compiute
           isCorrectAction = step.reqAction.every(a => currentActions.has(a));
         }
         
@@ -353,7 +359,6 @@
           } else {
              document.getElementById('feedback-msg').textContent = "❌ SELEZIONE ERRATA O INCOMPLETA. RIPROVA.";
           }
-          // Obbliga lo studente a rifare l'azione resettando il tracker
           currentActions.clear();
         }
       } else {
