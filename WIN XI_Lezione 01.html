@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulatore Windows 11 - Lezione 1 (Valutata)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    body {
+      height: 100vh;
+      overflow: hidden;
+      background: url('https://win11.rip/assets/wallpaper.jpg') #005a9e no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Schermata Login */
+    #login-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 2000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box {
+      background: white; padding: 30px; border-radius: 8px; text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 400px;
+    }
+    .login-box h2 { margin-bottom: 20px; font-size: 18px; color: #005a9e; }
+    .login-box input {
+      width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc;
+      border-radius: 4px; text-transform: lowercase; font-size: 14px;
+    }
+    .login-box button {
+      background: #0078d4; color: white; border: none; padding: 12px 20px;
+      border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;
+    }
+    .login-box button:hover { background: #005a9e; }
+
+    /* Pannello Guida Flottante */
+    #guide-panel {
+      position: absolute; top: 20px; left: 20px; width: 380px;
+      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+      border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000;
+      display: none; flex-direction: column; border: 1px solid #ccc;
+    }
+    #guide-header {
+      background: #0078d4; color: white; padding: 10px; border-radius: 8px 8px 0 0;
+      cursor: grab; display: flex; justify-content: space-between; align-items: center; font-weight: bold;
+    }
+    #guide-header:active { cursor: grabbing; }
+    #guide-content { padding: 15px; }
+    #guide-content.collapsed { display: none; }
+    #step-desc { color: #333; margin: 15px 0; line-height: 1.4; font-weight: bold; }
+    #feedback-msg { color: #d32f2f; font-weight: bold; margin-bottom: 10px; min-height: 16px; }
+    .btn-collapse { background: transparent; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; }
+    .btn { background: #0078d4; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+    .btn:hover { background: #005a9e; }
+    .btn-test { background: #2e7d32; display: none; margin-top: 10px; }
+    .btn-test:hover { background: #1b5e20; }
+
+    /* Area Desktop */
+    #desktop { flex: 1; position: relative; padding: 20px; }
+    .icon-container { display: grid; grid-template-columns: repeat(4, 90px) 40px repeat(4, 90px) 40px repeat(4, 90px); grid-auto-rows: 105px; gap: 10px; }
+    .spacer { width: 40px; }
+    .icon {
+      width: 85px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 1px solid transparent; border-radius: 4px; cursor: default; color: white; text-shadow: 1px 1px 2px black;
+      text-align: center; padding: 2px; line-height: 1.3;
+    }
+    .icon:hover { background: rgba(255, 255, 255, 0.1); }
+    .icon.selected { background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(255, 255, 255, 0.5); }
+    .icon-img-wrapper { position: relative; width: 45px; height: 45px; margin-bottom: 5px; pointer-events: none; }
+    .icon-img { width: 100%; height: 100%; pointer-events: none; }
+    
+    /* Freccia Collegamento corretta (SVG Integrato) */
+    .shortcut-arrow {
+      position: absolute; bottom: -2px; left: -2px; width: 18px; height: 18px;
+      background: rgba(255, 255, 255, 0.95); border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.4); padding: 1px; pointer-events: none;
+    }
+    
+    #selection-box { position: absolute; background: rgba(0, 120, 212, 0.4); border: 1px solid #0078d4; display: none; pointer-events: none; z-index: 50; }
+    #taskbar { height: 48px; background: rgba(32, 32, 32, 0.9); backdrop-filter: blur(20px); display: flex; justify-content: center; align-items: center; z-index: 100; }
+    .tb-icon { width: 32px; height: 32px; margin: 0 5px; border-radius: 4px; cursor: pointer; }
+    .tb-icon:hover { background: rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay Login -->
+  <div id="login-overlay">
+    <div class="login-box">
+      <h2>INSERISCI ACCOUNT SCOLASTICO</h2>
+      <input type="email" id="student-email" placeholder="nome.cognome@scuola.edu.it" autocomplete="off">
+      <button onclick="startLesson()">INIZIA LEZIONE</button>
+      <p id="login-error" style="color: red; margin-top: 10px; font-weight: bold; display: none;">INSERISCI UN'EMAIL VALIDA</p>
+    </div>
+  </div>
+
+  <!-- Pannello Istruzioni -->
+  <div id="guide-panel">
+    <div id="guide-header">
+      <span id="step-title">LEZIONE 1 - FASE 1</span>
+      <button class="btn-collapse" id="btn-collapse">[-]</button>
+    </div>
+    <div id="guide-content">
+      <p id="step-desc">Caricamento...</p>
+      <div id="feedback-msg"></div>
+      <button class="btn" id="next-btn" onclick="verifyOrNext()">AVANTI</button>
+      <button class="btn btn-test" id="test-btn" onclick="alert('ACCESSO AL TEST IN CORSO...')">ACCEDI AL TEST</button>
+    </div>
+  </div>
+
+  <div id="desktop">
+    <div id="selection-box"></div>
+    <div class="icon-container" id="icon-grid"></div>
+  </div>
+
+  <div id="taskbar">
+    <img src="https://img.icons8.com/color/48/windows-11.png" class="tb-icon" alt="START">
+    <img src="https://img.icons8.com/color/48/folder-invoices.png" class="tb-icon" alt="ESPLORA FILE">
+  </div>
+
+  <script>
+    // --- URL GOOGLE APPS SCRIPT ---
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/a/macros/ialombardia.it/s/AKfycbwt83klumVyHu3DavZPnF51qDlYblIyqhvAp3XHv5tL6els1i_nPQKDV5XFCMn7k8pW/exec";
+
+    let studentEmail = "";
+    let score = 0;
+    let totalPossibleScore = 0;
+    let firstAttempt = true;
+
+    function startLesson() {
+      const emailInput = document.getElementById('student-email').value.trim();
+      if(emailInput === "" || !emailInput.includes("@")) {
+        document.getElementById('login-error').style.display = "block";
+        return;
+      }
+      studentEmail = emailInput;
+      document.getElementById('login-overlay').style.display = "none";
+      document.getElementById('guide-panel').style.display = "flex";
+      updateStepUI();
+    }
+
+    // --- GENERAZIONE ICONE ---
+    const grid = document.getElementById('icon-grid');
+    const FOLDER_SRC = "https://img.icons8.com/color/48/folder-invoices.png";
+    const DOC_SRC = "https://img.icons8.com/color/48/word.png";
+    const XLS_SRC = "https://img.icons8.com/color/48/microsoft-excel-2019.png"; 
+    const TXT_SRC = "https://img.icons8.com/color/48/txt.png";
+    
+    // Freccia in formato SVG Data URI (Infallibile e scalabile)
+    const ARROW_SRC = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%230078d4' d='M14 15c-4.5 0-8 1.5-10.5 4 1-5 4-10 10.5-11V4l7 7-7 7v-3z'/%3E%3C/svg%3E"; 
+
+    let iconHTML = "";
+    for(let row = 1; row <= 3; row++) {
+      for(let i=1; i<=4; i++) {
+        iconHTML += `<div class="icon" data-id="cartella_${row}_${i}"><div class="icon-img-wrapper"><img src="${FOLDER_SRC}" class="icon-img"></div>CART.<br>${row}${i}</div>`;
+      }
+      iconHTML += `<div class="spacer"></div>`;
+      iconHTML += `<div class="icon" data-id="file_${row}_1"><div class="icon-img-wrapper"><img src="${DOC_SRC}" class="icon-img"></div>DOC${row}<br>.DOCX</div>`;
+      iconHTML += `<div class="icon" data-id="file_${row}_2"><div class="icon-img-wrapper"><img src="${XLS_SRC}" class="icon-img"></div>FOGLIO${row}<br>.XLSX</div>`;
+      iconHTML += `<div class="icon" data-id="file_${row}_3"><div class="icon-img-wrapper"><img src="${TXT_SRC}" class="icon-img"></div>APPUNTI${row}<br>.TXT</div>`;
+      iconHTML += `<div class="icon" data-id="file_${row}_4"><div class="icon-img-wrapper"><img src="${DOC_SRC}" class="icon-img"></div>RELAZ.${row}<br>.DOCX</div>`;
+      iconHTML += `<div class="spacer"></div>`;
+      for(let i=1; i<=4; i++) {
+        let typeSrc = i%2 === 0 ? FOLDER_SRC : XLS_SRC;
+        iconHTML += `<div class="icon" data-id="coll_${row}_${i}"><div class="icon-img-wrapper"><img src="${typeSrc}" class="icon-img"><img src="${ARROW_SRC}" class="shortcut-arrow"></div>LINK<br>${row}${i}</div>`;
+      }
+    }
+    grid.innerHTML = iconHTML;
+
+    // --- MOTORE DI SELEZIONE ---
+    const desktop = document.getElementById('desktop');
+    const selectionBox = document.getElementById('selection-box');
+    const icons = Array.from(document.querySelectorAll('.icon'));
+    let isDragging = false, startX, startY, initialSelectionBeforeDrag = new Set(), lastSelectedIcon = null;
+
+    function getVisuallySortedIcons() {
+      return icons.slice().sort((a, b) => {
+        const rA = a.getBoundingClientRect(), rB = b.getBoundingClientRect();
+        if (Math.abs(rA.top - rB.top) < 20) return rA.left - rB.left;
+        return rA.top - rB.top;
+      });
+    }
+
+    function updateSelectionUI() {
+      icons.forEach(icon => {
+        if (icon.classList.contains('selected')) {
+          icon.style.background = 'rgba(255, 255, 255, 0.3)'; icon.style.border = '1px solid rgba(255, 255, 255, 0.5)';
+        } else {
+          icon.style.background = ''; icon.style.border = '1px solid transparent';
+        }
+      });
+    }
+
+    icons.forEach(icon => {
+      icon.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        if (e.shiftKey && lastSelectedIcon) {
+          const sorted = getVisuallySortedIcons();
+          const minIdx = Math.min(sorted.indexOf(lastSelectedIcon), sorted.indexOf(icon));
+          const maxIdx = Math.max(sorted.indexOf(lastSelectedIcon), sorted.indexOf(icon));
+          if (!e.ctrlKey) icons.forEach(i => i.classList.remove('selected'));
+          for (let i = minIdx; i <= maxIdx; i++) sorted[i].classList.add('selected');
+        } else if (e.ctrlKey) {
+          icon.classList.toggle('selected');
+          lastSelectedIcon = icon;
+        } else {
+          icons.forEach(i => i.classList.remove('selected'));
+          icon.classList.add('selected');
+          lastSelectedIcon = icon;
+        }
+        updateSelectionUI();
+      });
+    });
+
+    desktop.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.icon')) return;
+      isDragging = true; startX = e.clientX; startY = e.clientY;
+      selectionBox.style.left = startX + 'px'; selectionBox.style.top = startY + 'px';
+      selectionBox.style.width = '0px'; selectionBox.style.height = '0px'; selectionBox.style.display = 'block';
+      initialSelectionBeforeDrag = new Set(icons.filter(i => i.classList.contains('selected')));
+      if (!e.ctrlKey && !e.shiftKey) {
+        icons.forEach(i => i.classList.remove('selected')); initialSelectionBeforeDrag.clear(); updateSelectionUI();
+      }
+    });
+
+    desktop.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const cX = e.clientX, cY = e.clientY;
+      selectionBox.style.left = Math.min(startX, cX) + 'px'; selectionBox.style.top = Math.min(startY, cY) + 'px';
+      selectionBox.style.width = Math.abs(cX - startX) + 'px'; selectionBox.style.height = Math.abs(cY - startY) + 'px';
+      const boxRect = selectionBox.getBoundingClientRect();
+
+      icons.forEach(icon => {
+        const iR = icon.getBoundingClientRect();
+        const isInter = !(boxRect.right < iR.left || boxRect.left > iR.right || boxRect.bottom < iR.top || boxRect.top > iR.bottom);
+        const wasSel = initialSelectionBeforeDrag.has(icon);
+        if (e.ctrlKey) {
+          if (isInter) { wasSel ? icon.classList.remove('selected') : icon.classList.add('selected'); }
+          else { wasSel ? icon.classList.add('selected') : icon.classList.remove('selected'); }
+        } else {
+          if (isInter) { icon.classList.add('selected'); }
+          else { wasSel ? icon.classList.add('selected') : icon.classList.remove('selected'); }
+        }
+      });
+      updateSelectionUI();
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; selectionBox.style.display = 'none'; });
+
+    // --- PANNELLO FLOTTANTE ---
+    const panel = document.getElementById('guide-panel'), header = document.getElementById('guide-header');
+    let isDraggingPanel = false, pStartX, pStartY, iLeft, iTop;
+    document.getElementById('btn-collapse').addEventListener('click', function() {
+      document.getElementById('guide-content').classList.toggle('collapsed');
+      this.textContent = document.getElementById('guide-content').classList.contains('collapsed') ? '[+]' : '[-]';
+    });
+    header.addEventListener('mousedown', (e) => {
+      if(e.target.id === 'btn-collapse') return;
+      isDraggingPanel = true; pStartX = e.clientX; pStartY = e.clientY;
+      const rect = panel.getBoundingClientRect(); iLeft = rect.left; iTop = rect.top;
+    });
+    window.addEventListener('mousemove', (e) => {
+      if(isDraggingPanel) { panel.style.left = (iLeft + (e.clientX - pStartX)) + 'px'; panel.style.top = (iTop + (e.clientY - pStartY)) + 'px'; }
+    });
+    window.addEventListener('mouseup', () => isDraggingPanel = false);
+
+    // --- MOTORE ISTRUZIONI & VALUTAZIONE ---
+    let currentStep = 0;
+    const steps = [
+      { type: 'info', text: "BENVENUTO. IL DESKTOP HA 3 GRUPPI: CARTELLE (SX), FILE (CENTRO), COLLEGAMENTI (DX)." },
+      { type: 'action', text: "SELEZIONA SOLO LA 'CART. 11' (PRIMA IN ALTO A SINISTRA).", target: ["cartella_1_1"] },
+      { type: 'action', text: "DESELEZIONA LA CARTELLA CLICCANDO NEL VUOTO.", target: [] },
+      { type: 'info', text: "SELEZIONE MULTIPLA CON IL METODO DRAG & DROP: TRASCINA IL MOUSE NEL VUOTO PER CREARE UN RETTANGOLO DI SELEZIONE." },
+      { type: 'action', text: "SELEZIONA TUTTI E 4 I FILE DELLA PRIMA RIGA (DA DOC1 A RELAZ.1) CON IL RETTANGOLO.", target: ["file_1_1", "file_1_2", "file_1_3", "file_1_4"] },
+      { type: 'action', text: "DESELEZIONA TUTTO CLICCANDO NEL VUOTO.", target: [] },
+      { type: 'info', text: "AGGIUNTA ALLA SELEZIONE DI OGGETTI SINGOLI: SELEZIONA UN OGGETTO, POI TIENI PREMUTO 'CTRL' PER AGGIUNGERE ALTRI OGGETTI SINGOLARMENTE." },
+      { type: 'action', text: "SELEZIONA 'CART. 21', POI CON CTRL AGGIUNGI 'FOGLIO2' E 'LINK 23'.", target: ["cartella_2_1", "file_2_2", "coll_2_3"] },
+      { type: 'action', text: "AGGIUNTA ALLA SELEZIONE DI OGGETTI MULTIPLI: AGGIUNGI ALLA SELEZIONE ATTUALE 'CART. 11' E 'CART. 12' USANDO CTRL + RETTANGOLO DI SELEZIONE.", target: ["cartella_2_1", "file_2_2", "coll_2_3", "cartella_1_1", "cartella_1_2"] },
+      { type: 'info', text: "DESELEZIONE MIRATA: TIENI PREMUTO CTRL E CLICCA UN'ICONA GIA' SELEZIONATA PER DESELEZIONARLA." },
+      { type: 'action', text: "DESELEZIONA SOLO 'FOGLIO2' TRAMITE CTRL + CLIC.", target: ["cartella_2_1", "coll_2_3", "cartella_1_1", "cartella_1_2"] },
+      { type: 'action', text: "DESELEZIONA 'CART. 11' E 'CART. 12' USANDO CTRL + RETTANGOLO DI SELEZIONE.", target: ["cartella_2_1", "coll_2_3"] },
+      { type: 'action', text: "DESELEZIONA TUTTO CLICCANDO NEL VUOTO.", target: [] },
+      { type: 'info', text: "SELEZIONE DI OGGETTI VICINI (PER RIGA): SELEZIONA UNA ICONA, TIENI PREMUTO 'MAIUSC' (SHIFT) E CLICCA UN'ALTRA PER SELEZIONARE L'INTERO INTERVALLO." },
+      { type: 'action', text: "SELEZIONA DA 'CART. 31' A 'CART. 34' USANDO LA COMBINAZIONE MAIUSC + CLIC.", target: ["cartella_3_1", "cartella_3_2", "cartella_3_3", "cartella_3_4"] },
+      { type: 'info', text: "AGGIUNTA DI GRUPPI DI ICONE VICINE PER RIGA (CTRL + MAIUSC + CLIC): MANTIENE LA SELEZIONE ATTUALE E AGGIUNGE UN NUOVO INTERVALLO." },
+      { type: 'action', text: "MANTENENDO SELEZIONATE LE CARTELLE, TIENI PREMUTO CTRL E CLICCA 'LINK 31'. POI, TIENI PREMUTI CTRL+MAIUSC E CLICCA 'LINK 34'.", target: ["cartella_3_1", "cartella_3_2", "cartella_3_3", "cartella_3_4", "coll_3_1", "coll_3_2", "coll_3_3", "coll_3_4"] },
+      { type: 'action', text: "OTTIMO! DESELEZIONA TUTTO PER CONCLUDERE LA LEZIONE.", target: [] }
+    ];
+
+    steps.forEach(s => { if(s.type === 'action') totalPossibleScore += 10; });
+
+    function updateStepUI() {
+      if(currentStep >= steps.length) { finishLesson(); return; }
+      const step = steps[currentStep];
+      document.getElementById('step-title').textContent = `LEZIONE 1 - FASE ${currentStep + 1}/${steps.length}`;
+      document.getElementById('step-desc').textContent = step.text;
+      document.getElementById('next-btn').textContent = step.type === 'action' ? "VERIFICA AZIONE" : "AVANTI";
+      document.getElementById('feedback-msg').textContent = "";
+      firstAttempt = true;
+    }
+
+    function verifyOrNext() {
+      const step = steps[currentStep];
+      if (step.type === 'action') {
+        const currentSel = icons.filter(i => i.classList.contains('selected')).map(i => i.getAttribute('data-id'));
+        const isCorrect = currentSel.length === step.target.length && step.target.every(id => currentSel.includes(id));
+        
+        if (isCorrect) {
+          if (firstAttempt) score += 10;
+          currentStep++; updateStepUI();
+        } else {
+          firstAttempt = false;
+          document.getElementById('feedback-msg').textContent = "❌ AZIONE ERRATA O INCOMPLETA. RIPROVA.";
+        }
+      } else {
+        currentStep++; updateStepUI();
+      }
+    }
+
+    function finishLesson() {
+      const percentage = Math.round((score / totalPossibleScore) * 100);
+      let finalMsg = `LEZIONE CONCLUSA!\nPUNTEGGIO: ${percentage}%\n\n`;
+      
+      document.getElementById('step-title').textContent = "RISULTATO FINALE";
+      document.getElementById('next-btn').style.display = "none";
+      
+      if (percentage >= 85) {
+        finalMsg += "✅ IDONEO! PUOI ACCEDERE AL TEST.";
+        document.getElementById('test-btn').style.display = "block";
+      } else {
+        finalMsg += "❌ NON IDONEO. RICARICA LA PAGINA PER RIPETERE (RICHIESTO 85%).";
+      }
+      document.getElementById('step-desc').innerText = finalMsg;
+
+      // Invia Dati a Google Sheets via Webhook
+      if(GOOGLE_SCRIPT_URL.includes("script.google.com")) {
+        const payload = JSON.stringify({ student: studentEmail, lesson: "Lezione 1", score: percentage, passed: percentage >= 85 });
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          body: payload,
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        }).catch(err => console.log("Invio report disabilitato in locale."));
+      }
+    }
+  </script>
+</body>
+</html>
