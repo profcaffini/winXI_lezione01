@@ -366,7 +366,7 @@
       }
     }
 
-    function finishLesson() {
+   function finishLesson() {
       const percentage = Math.round((score / totalPossibleScore) * 100);
       let finalMsg = `LEZIONE CONCLUSA!\nPUNTEGGIO: ${percentage}%\n\n`;
       
@@ -381,13 +381,20 @@
       }
       document.getElementById('step-desc').innerText = finalMsg;
 
+      // Sezione modificata per l'invio tramite URL (dominio scolastico)
       if(GOOGLE_SCRIPT_URL.includes("script.google.com")) {
-        const payload = JSON.stringify({ student: studentEmail, lesson: "Lezione 1", score: percentage, passed: percentage >= 85 });
-        fetch(GOOGLE_SCRIPT_URL, {
-          method: 'POST',
-          body: payload,
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-        }).catch(err => console.log("Invio report disabilitato in locale."));
+        // Aggiunge un bottone extra per inviare il voto
+        const btnInvia = document.createElement("button");
+        btnInvia.className = "btn";
+        btnInvia.style.backgroundColor = "#d32f2f";
+        btnInvia.style.marginTop = "10px";
+        btnInvia.innerText = "REGISTRA IL VOTO UFFICIALE";
+        btnInvia.onclick = function() {
+          const finalUrl = GOOGLE_SCRIPT_URL + "?lesson=Lezione_1&score=" + percentage;
+          window.open(finalUrl, "_blank"); // Apre la pagina di script per salvare il voto
+          btnInvia.style.display = "none";
+        };
+        document.getElementById('guide-content').appendChild(btnInvia);
       }
     }
   </script>
