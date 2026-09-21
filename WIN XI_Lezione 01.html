@@ -23,7 +23,6 @@
       flex-direction: column;
     }
 
-    /* Schermata Login */
     #login-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.8);
@@ -45,7 +44,6 @@
     }
     .login-box button:hover { background: #005a9e; }
 
-    /* Pannello Guida Flottante */
     #guide-panel {
       position: absolute; top: 20px; left: 20px; width: 380px;
       background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
@@ -60,14 +58,13 @@
     #guide-content { padding: 15px; }
     #guide-content.collapsed { display: none; }
     #step-desc { color: #333; margin: 15px 0; line-height: 1.4; font-weight: bold; }
-    #feedback-msg { color: #d32f2f; font-weight: bold; margin-bottom: 10px; min-height: 16px; }
+    #feedback-msg { color: #d32f2f; font-weight: bold; margin-bottom: 10px; min-height: 32px; display: block; }
     .btn-collapse { background: transparent; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; }
     .btn { background: #0078d4; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
     .btn:hover { background: #005a9e; }
     .btn-test { background: #2e7d32; display: none; margin-top: 10px; }
     .btn-test:hover { background: #1b5e20; }
 
-    /* Area Desktop */
     #desktop { flex: 1; position: relative; padding: 20px; }
     .icon-container { display: grid; grid-template-columns: repeat(4, 90px) 40px repeat(4, 90px) 40px repeat(4, 90px); grid-auto-rows: 105px; gap: 10px; }
     .spacer { width: 40px; }
@@ -81,7 +78,6 @@
     .icon-img-wrapper { position: relative; width: 45px; height: 45px; margin-bottom: 5px; pointer-events: none; }
     .icon-img { width: 100%; height: 100%; pointer-events: none; }
     
-    /* Freccia Collegamento corretta (SVG Integrato) */
     .shortcut-arrow {
       position: absolute; bottom: -2px; left: -2px; width: 18px; height: 18px;
       background: rgba(255, 255, 255, 0.95); border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.4); padding: 1px; pointer-events: none;
@@ -95,7 +91,6 @@
 </head>
 <body>
 
-  <!-- Overlay Login -->
   <div id="login-overlay">
     <div class="login-box">
       <h2>INSERISCI ACCOUNT SCOLASTICO</h2>
@@ -105,7 +100,6 @@
     </div>
   </div>
 
-  <!-- Pannello Istruzioni -->
   <div id="guide-panel">
     <div id="guide-header">
       <span id="step-title">LEZIONE 1 - FASE 1</span>
@@ -130,13 +124,19 @@
   </div>
 
   <script>
-    // --- URL GOOGLE APPS SCRIPT ---
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/a/macros/ialombardia.it/s/AKfycbwt83klumVyHu3DavZPnF51qDlYblIyqhvAp3XHv5tL6els1i_nPQKDV5XFCMn7k8pW/exec";
+    const GOOGLE_SCRIPT_URL = "INSERISCI_QUI_URL_DELLO_SCRIPT";
 
     let studentEmail = "";
     let score = 0;
     let totalPossibleScore = 0;
     let firstAttempt = true;
+
+    // Tracker per vincolare la procedura
+    let currentActions = new Set();
+    let isDragging = false;
+    let dragStarted = false;
+    let currentDragType = null;
+    let startX, startY;
 
     function startLesson() {
       const emailInput = document.getElementById('student-email').value.trim();
@@ -150,14 +150,11 @@
       updateStepUI();
     }
 
-    // --- GENERAZIONE ICONE ---
     const grid = document.getElementById('icon-grid');
     const FOLDER_SRC = "https://img.icons8.com/color/48/folder-invoices.png";
     const DOC_SRC = "https://img.icons8.com/color/48/word.png";
     const XLS_SRC = "https://img.icons8.com/color/48/microsoft-excel-2019.png"; 
     const TXT_SRC = "https://img.icons8.com/color/48/txt.png";
-    
-    // Freccia in formato SVG Data URI (Infallibile e scalabile)
     const ARROW_SRC = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%230078d4' d='M14 15c-4.5 0-8 1.5-10.5 4 1-5 4-10 10.5-11V4l7 7-7 7v-3z'/%3E%3C/svg%3E"; 
 
     let iconHTML = "";
@@ -178,11 +175,10 @@
     }
     grid.innerHTML = iconHTML;
 
-    // --- MOTORE DI SELEZIONE ---
     const desktop = document.getElementById('desktop');
     const selectionBox = document.getElementById('selection-box');
     const icons = Array.from(document.querySelectorAll('.icon'));
-    let isDragging = false, startX, startY, initialSelectionBeforeDrag = new Set(), lastSelectedIcon = null;
+    let initialSelectionBeforeDrag = new Set(), lastSelectedIcon = null;
 
     function getVisuallySortedIcons() {
       return icons.slice().sort((a, b) => {
@@ -205,6 +201,13 @@
     icons.forEach(icon => {
       icon.addEventListener('mousedown', (e) => {
         e.stopPropagation();
+        
+        // Traccia l'azione dell'utente
+        if (e.shiftKey && e.ctrlKey) currentActions.add('CTRL_SHIFT_CLICK');
+        else if (e.shiftKey) currentActions.add('SHIFT_CLICK');
+        else if (e.ctrlKey) currentActions.add('CTRL_CLICK');
+        else currentActions.add('CLICK');
+
         if (e.shiftKey && lastSelectedIcon) {
           const sorted = getVisuallySortedIcons();
           const minIdx = Math.min(sorted.indexOf(lastSelectedIcon), sorted.indexOf(icon));
@@ -225,7 +228,9 @@
 
     desktop.addEventListener('mousedown', (e) => {
       if (e.target.closest('.icon')) return;
-      isDragging = true; startX = e.clientX; startY = e.clientY;
+      isDragging = true; 
+      dragStarted = false;
+      startX = e.clientX; startY = e.clientY;
       selectionBox.style.left = startX + 'px'; selectionBox.style.top = startY + 'px';
       selectionBox.style.width = '0px'; selectionBox.style.height = '0px'; selectionBox.style.display = 'block';
       initialSelectionBeforeDrag = new Set(icons.filter(i => i.classList.contains('selected')));
@@ -237,6 +242,13 @@
     desktop.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
       const cX = e.clientX, cY = e.clientY;
+      
+      // Verifica se l'utente sta effettivamente trascinando e non solo cliccando
+      if (Math.abs(cX - startX) > 5 || Math.abs(cY - startY) > 5) {
+        dragStarted = true;
+        currentDragType = e.ctrlKey ? 'CTRL_DRAG' : 'DRAG';
+      }
+
       selectionBox.style.left = Math.min(startX, cX) + 'px'; selectionBox.style.top = Math.min(startY, cY) + 'px';
       selectionBox.style.width = Math.abs(cX - startX) + 'px'; selectionBox.style.height = Math.abs(cY - startY) + 'px';
       const boxRect = selectionBox.getBoundingClientRect();
@@ -256,9 +268,18 @@
       updateSelectionUI();
     });
 
-    window.addEventListener('mouseup', () => { isDragging = false; selectionBox.style.display = 'none'; });
+    window.addEventListener('mouseup', () => { 
+      if (isDragging) {
+        if (dragStarted) {
+          currentActions.add(currentDragType);
+        } else {
+          currentActions.add('EMPTY_CLICK');
+        }
+      }
+      isDragging = false; 
+      selectionBox.style.display = 'none'; 
+    });
 
-    // --- PANNELLO FLOTTANTE ---
     const panel = document.getElementById('guide-panel'), header = document.getElementById('guide-header');
     let isDraggingPanel = false, pStartX, pStartY, iLeft, iTop;
     document.getElementById('btn-collapse').addEventListener('click', function() {
@@ -275,27 +296,26 @@
     });
     window.addEventListener('mouseup', () => isDraggingPanel = false);
 
-    // --- MOTORE ISTRUZIONI & VALUTAZIONE ---
     let currentStep = 0;
     const steps = [
       { type: 'info', text: "BENVENUTO. IL DESKTOP HA 3 GRUPPI: CARTELLE (SX), FILE (CENTRO), COLLEGAMENTI (DX)." },
-      { type: 'action', text: "SELEZIONA SOLO LA 'CART. 11' (PRIMA IN ALTO A SINISTRA).", target: ["cartella_1_1"] },
-      { type: 'action', text: "DESELEZIONA LA CARTELLA CLICCANDO NEL VUOTO.", target: [] },
-      { type: 'info', text: "SELEZIONE MULTIPLA CON IL METODO DRAG & DROP: TRASCINA IL MOUSE NEL VUOTO PER CREARE UN RETTANGOLO DI SELEZIONE." },
-      { type: 'action', text: "SELEZIONA TUTTI E 4 I FILE DELLA PRIMA RIGA (DA DOC1 A RELAZ.1) CON IL RETTANGOLO.", target: ["file_1_1", "file_1_2", "file_1_3", "file_1_4"] },
-      { type: 'action', text: "DESELEZIONA TUTTO CLICCANDO NEL VUOTO.", target: [] },
-      { type: 'info', text: "AGGIUNTA ALLA SELEZIONE DI OGGETTI SINGOLI: SELEZIONA UN OGGETTO, POI TIENI PREMUTO 'CTRL' PER AGGIUNGERE ALTRI OGGETTI SINGOLARMENTE." },
-      { type: 'action', text: "SELEZIONA 'CART. 21', POI CON CTRL AGGIUNGI 'FOGLIO2' E 'LINK 23'.", target: ["cartella_2_1", "file_2_2", "coll_2_3"] },
-      { type: 'action', text: "AGGIUNTA ALLA SELEZIONE DI OGGETTI MULTIPLI: AGGIUNGI ALLA SELEZIONE ATTUALE 'CART. 11' E 'CART. 12' USANDO CTRL + RETTANGOLO DI SELEZIONE.", target: ["cartella_2_1", "file_2_2", "coll_2_3", "cartella_1_1", "cartella_1_2"] },
+      { type: 'action', text: "SELEZIONA SOLO LA 'CART. 11' (PRIMA IN ALTO A SINISTRA).", target: ["cartella_1_1"], reqAction: ["CLICK"], errorHint: "CLICCA SULL'ICONA" },
+      { type: 'action', text: "DESELEZIONA LA CARTELLA CLICCANDO NEL VUOTO.", target: [], reqAction: ["EMPTY_CLICK"], errorHint: "CLICCA SU UNO SPAZIO VUOTO" },
+      { type: 'info', text: "DRAG & DROP: TRASCINA IL MOUSE NEL VUOTO PER CREARE UN RETTANGOLO DI SELEZIONE." },
+      { type: 'action', text: "SELEZIONA TUTTI E 4 I FILE DELLA PRIMA RIGA (DA DOC1 A RELAZ.1) CON IL RETTANGOLO.", target: ["file_1_1", "file_1_2", "file_1_3", "file_1_4"], reqAction: ["DRAG"], errorHint: "USA IL RETTANGOLO DI SELEZIONE" },
+      { type: 'action', text: "DESELEZIONA TUTTO CLICCANDO NEL VUOTO.", target: [], reqAction: ["EMPTY_CLICK"], errorHint: "CLICCA SU UNO SPAZIO VUOTO" },
+      { type: 'info', text: "AGGIUNTA ALLA SELEZIONE: SELEZIONA UN OGGETTO, POI TIENI PREMUTO 'CTRL' E CLICCA GLI ALTRI." },
+      { type: 'action', text: "SELEZIONA 'CART. 21', POI CON CTRL AGGIUNGI 'FOGLIO2' E 'LINK 23'.", target: ["cartella_2_1", "file_2_2", "coll_2_3"], reqAction: ["CTRL_CLICK"], errorHint: "USA CTRL + CLIC" },
+      { type: 'action', text: "AGGIUNGI ALLA SELEZIONE ATTUALE 'CART. 11' E 'CART. 12' USANDO CTRL + RETTANGOLO DI SELEZIONE.", target: ["cartella_2_1", "file_2_2", "coll_2_3", "cartella_1_1", "cartella_1_2"], reqAction: ["CTRL_DRAG"], errorHint: "USA CTRL + RETTANGOLO" },
       { type: 'info', text: "DESELEZIONE MIRATA: TIENI PREMUTO CTRL E CLICCA UN'ICONA GIA' SELEZIONATA PER DESELEZIONARLA." },
-      { type: 'action', text: "DESELEZIONA SOLO 'FOGLIO2' TRAMITE CTRL + CLIC.", target: ["cartella_2_1", "coll_2_3", "cartella_1_1", "cartella_1_2"] },
-      { type: 'action', text: "DESELEZIONA 'CART. 11' E 'CART. 12' USANDO CTRL + RETTANGOLO DI SELEZIONE.", target: ["cartella_2_1", "coll_2_3"] },
-      { type: 'action', text: "DESELEZIONA TUTTO CLICCANDO NEL VUOTO.", target: [] },
-      { type: 'info', text: "SELEZIONE DI OGGETTI VICINI (PER RIGA): SELEZIONA UNA ICONA, TIENI PREMUTO 'MAIUSC' (SHIFT) E CLICCA UN'ALTRA PER SELEZIONARE L'INTERO INTERVALLO." },
-      { type: 'action', text: "SELEZIONA DA 'CART. 31' A 'CART. 34' USANDO LA COMBINAZIONE MAIUSC + CLIC.", target: ["cartella_3_1", "cartella_3_2", "cartella_3_3", "cartella_3_4"] },
-      { type: 'info', text: "AGGIUNTA DI GRUPPI DI ICONE VICINE PER RIGA (CTRL + MAIUSC + CLIC): MANTIENE LA SELEZIONE ATTUALE E AGGIUNGE UN NUOVO INTERVALLO." },
-      { type: 'action', text: "MANTENENDO SELEZIONATE LE CARTELLE, TIENI PREMUTO CTRL E CLICCA 'LINK 31'. POI, TIENI PREMUTI CTRL+MAIUSC E CLICCA 'LINK 34'.", target: ["cartella_3_1", "cartella_3_2", "cartella_3_3", "cartella_3_4", "coll_3_1", "coll_3_2", "coll_3_3", "coll_3_4"] },
-      { type: 'action', text: "OTTIMO! DESELEZIONA TUTTO PER CONCLUDERE LA LEZIONE.", target: [] }
+      { type: 'action', text: "DESELEZIONA SOLO 'FOGLIO2' TRAMITE CTRL + CLIC.", target: ["cartella_2_1", "coll_2_3", "cartella_1_1", "cartella_1_2"], reqAction: ["CTRL_CLICK"], errorHint: "USA CTRL + CLIC" },
+      { type: 'action', text: "DESELEZIONA 'CART. 11' E 'CART. 12' USANDO CTRL + RETTANGOLO DI SELEZIONE.", target: ["cartella_2_1", "coll_2_3"], reqAction: ["CTRL_DRAG"], errorHint: "USA CTRL + RETTANGOLO" },
+      { type: 'action', text: "DESELEZIONA TUTTO CLICCANDO NEL VUOTO.", target: [], reqAction: ["EMPTY_CLICK"], errorHint: "CLICCA SU UNO SPAZIO VUOTO" },
+      { type: 'info', text: "SELEZIONE CONTIGUA: SELEZIONA UNA ICONA, TIENI PREMUTO 'MAIUSC' (SHIFT) E CLICCA UN'ALTRA PER SELEZIONARE L'INTERO INTERVALLO." },
+      { type: 'action', text: "SELEZIONA DA 'CART. 31' A 'CART. 34' USANDO LA COMBINAZIONE MAIUSC + CLIC.", target: ["cartella_3_1", "cartella_3_2", "cartella_3_3", "cartella_3_4"], reqAction: ["SHIFT_CLICK"], errorHint: "USA MAIUSC + CLIC" },
+      { type: 'info', text: "AGGIUNTA DI GRUPPI (CTRL + MAIUSC + CLIC): MANTIENE LA SELEZIONE ATTUALE E AGGIUNGE UN NUOVO INTERVALLO." },
+      { type: 'action', text: "MANTENENDO SELEZIONATE LE CARTELLE, TIENI PREMUTO CTRL E CLICCA 'LINK 31'. POI, TIENI PREMUTI CTRL+MAIUSC E CLICCA 'LINK 34'.", target: ["cartella_3_1", "cartella_3_2", "cartella_3_3", "cartella_3_4", "coll_3_1", "coll_3_2", "coll_3_3", "coll_3_4"], reqAction: ["CTRL_CLICK", "CTRL_SHIFT_CLICK"], errorHint: "USA CTRL + CLIC E POI CTRL + MAIUSC + CLIC" },
+      { type: 'action', text: "OTTIMO! DESELEZIONA TUTTO PER CONCLUDERE LA LEZIONE.", target: [], reqAction: ["EMPTY_CLICK"], errorHint: "CLICCA SU UNO SPAZIO VUOTO" }
     ];
 
     steps.forEach(s => { if(s.type === 'action') totalPossibleScore += 10; });
@@ -308,20 +328,33 @@
       document.getElementById('next-btn').textContent = step.type === 'action' ? "VERIFICA AZIONE" : "AVANTI";
       document.getElementById('feedback-msg').textContent = "";
       firstAttempt = true;
+      currentActions.clear(); // Reset delle azioni ad ogni nuovo step
     }
 
     function verifyOrNext() {
       const step = steps[currentStep];
       if (step.type === 'action') {
         const currentSel = icons.filter(i => i.classList.contains('selected')).map(i => i.getAttribute('data-id'));
-        const isCorrect = currentSel.length === step.target.length && step.target.every(id => currentSel.includes(id));
+        const isCorrectTarget = currentSel.length === step.target.length && step.target.every(id => currentSel.includes(id));
         
-        if (isCorrect) {
+        let isCorrectAction = true;
+        if (step.reqAction) {
+          // Verifica che tutte le azioni richieste per questo step siano state compiute
+          isCorrectAction = step.reqAction.every(a => currentActions.has(a));
+        }
+        
+        if (isCorrectTarget && isCorrectAction) {
           if (firstAttempt) score += 10;
           currentStep++; updateStepUI();
         } else {
           firstAttempt = false;
-          document.getElementById('feedback-msg').textContent = "❌ AZIONE ERRATA O INCOMPLETA. RIPROVA.";
+          if (isCorrectTarget && !isCorrectAction) {
+             document.getElementById('feedback-msg').textContent = `❌ RISULTATO CORRETTO, MA PROCEDURA ERRATA. DEVI USARE: ${step.errorHint}`;
+          } else {
+             document.getElementById('feedback-msg').textContent = "❌ SELEZIONE ERRATA O INCOMPLETA. RIPROVA.";
+          }
+          // Obbliga lo studente a rifare l'azione resettando il tracker
+          currentActions.clear();
         }
       } else {
         currentStep++; updateStepUI();
@@ -343,7 +376,6 @@
       }
       document.getElementById('step-desc').innerText = finalMsg;
 
-      // Invia Dati a Google Sheets via Webhook
       if(GOOGLE_SCRIPT_URL.includes("script.google.com")) {
         const payload = JSON.stringify({ student: studentEmail, lesson: "Lezione 1", score: percentage, passed: percentage >= 85 });
         fetch(GOOGLE_SCRIPT_URL, {
